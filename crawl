@@ -1,0 +1,31 @@
+#!/usr/bin/env escript
+%% -*- erlang -*-
+%%! -smp enable -sname factorial -mnesia debug verbose
+
+main([Root]) ->
+  try
+    crawl(Root)
+  catch
+    ErrorType:Error ->
+      io:format("Error: ~s ~s~n", [ErrorType, Error])
+    end;
+main(_) ->
+  usage().
+
+usage() ->
+  io:format("usage: crawl path\n"),
+    halt(1).
+
+crawl(Root) ->
+  io:format("~s~n", [Root]),
+  file:list_dir(Root),
+  case file:list_dir(Root) of
+    {ok, Files} ->
+      lists:map(
+        fun(File) ->
+	  crawl(Root ++ "/" ++ File)
+	  end, Files);
+    Error -> Error
+  end;
+crawl(_) ->
+  ok.
