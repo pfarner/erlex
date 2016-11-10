@@ -1,5 +1,10 @@
-all:
-	erlc *.erl
+ERL  := $(wildcard *.erl)
+BEAM := $(patsubst %.erl,%.beam,$(ERL))
+
+all:	$(BEAM)
+
+%.beam: %.erl
+	erlc $<
 
 run:	all
 	erl -noshell -s progress start -s init stop

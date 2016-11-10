@@ -4,6 +4,8 @@
 
 main([Root]) ->
   try
+    io:format("Device: ~p~n", [mounts:get_mount(Root)]),
+    io:format("~p~n", [devices:block_device_id(Root)]),
     crawl:print(Root)
   catch
     ErrorType:Error ->
