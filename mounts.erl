@@ -7,15 +7,16 @@ get_mounts() ->
   % Must split and parse the lines
 
 get_mount(Path) ->
-  try maps:get(Path, get_mounts())
+  AbsPath = iolist_to_binary(filename:absname(Path)),
+  try maps:get(AbsPath, get_mounts())
   catch error:bad_key ->
-    case Path of
+    case AbsPath of
       "/" ->
         throw("no_mount");
       <<"/">> ->
         throw("no_mount");
       _ ->
-        get_mount(iolist_to_binary(filename:dirname(Path)))
+        get_mount(filename:dirname(AbsPath))
     end
   end.
 
