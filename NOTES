@@ -1,0 +1,6 @@
+Find the volume for a file:
+
+join \
+  =(df -h . | tail -1 | awk '{ print $1 }') \
+  =(lvs -o dm_path,lv_uuid --noheadings 2>/dev/null | awk '{ print $1,$2 }' | sort) \
+  | awk '{ print $2 }'
