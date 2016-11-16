@@ -4,7 +4,6 @@
 get_mounts() ->
   Data = raw_read_file("/etc/mtab"),
   parse_mounts(binary:split(Data, [<<"\n">>], [global]), #{}).
-  % Must split and parse the lines
 
 get_mount(Path) ->
   AbsPath = filename:absname(iolist_to_binary(Path)),
