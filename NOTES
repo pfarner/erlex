@@ -4,3 +4,15 @@ join \
   =(df -h . | tail -1 | awk '{ print $1 }') \
   =(lvs -o dm_path,lv_uuid --noheadings 2>/dev/null | awk '{ print $1,$2 }' | sort) \
   | awk '{ print $2 }'
+
+
+
+Use this for native inotify support: https://github.com/synrc/fs
+
+
+
+Filesystem data:
+  fsid non-null int, assigned
+  deviceid nullable string
+  mount non-null string
+  type non-null string

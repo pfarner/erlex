@@ -4,6 +4,11 @@
 
 main([Root]) ->
   try
+    io:format("fsid:     ~p~n", [""]),
+    io:format("deviceid: ~p~n", [""]),
+    io:format("mount:    ~p~n", [mounts:get_mount(Root)]),
+    io:format("type:     ~p~n", [mounts:get_type(Root)]),
+    io:format("~n~n"),
     io:format("Device: ~p~n", [mounts:get_mount(Root)]),
     io:format("Block device: ~p~n", [devices:block_device_id(Root)]),
     crawl:print(Root)
