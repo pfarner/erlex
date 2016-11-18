@@ -1,22 +1,21 @@
 -module(mounts).
--export([get_mounts/0,get_types/0,get_mount/1,get_type/1]).
+-export([get_mounts/0,get_mount/1,get_type/1,get_options/1,get_fs_freq/1,get_fs_passno/1]).
+
+get_mtab_data(Index) ->
+  Data = raw_read_file("/etc/mtab"),
+  parse_field(binary:split(Data, [<<"\n">>], [global]), Index, #{}).
 
 get_mounts() ->
-  Data = raw_read_file("/etc/mtab"),
-  parse_mounts(binary:split(Data, [<<"\n">>], [global]), #{}).
-
-get_types() ->
-  Data = raw_read_file("/etc/mtab"),
-  parse_types(binary:split(Data, [<<"\n">>], [global]), #{}).
+  get_mtab_data(1).
 
 % See also http://git.savannah.gnu.org/cgit/coreutils.git/tree/src/df.c
 get_mount(Path) ->
   AbsPath = abspath(Path),
-  try maps:get(AbsPath, get_mounts())
+  try maps:get(AbsPath, get_mtab_data(1))
   catch error:bad_key ->
     case AbsPath of
       <<"/">> ->
-        throw("no_mount");
+        throw(no_mount);
       _ ->
         get_mount(filename:dirname(AbsPath))
     end
@@ -24,13 +23,49 @@ get_mount(Path) ->
 
 get_type(Path) ->
   AbsPath = abspath(Path),
-  try maps:get(AbsPath, get_types())
+  try maps:get(AbsPath, get_mtab_data(3))
   catch error:bad_key ->
     case AbsPath of
       <<"/">> ->
         throw("no_type");
       _ ->
         get_type(filename:dirname(AbsPath))
+    end
+  end.
+
+get_options(Path) ->
+  AbsPath = abspath(Path),
+  try maps:get(AbsPath, get_mtab_data(4))
+  catch error:bad_key ->
+    case AbsPath of
+      <<"/">> ->
+        throw("no_options");
+      _ ->
+        get_options(filename:dirname(AbsPath))
+    end
+  end.
+
+get_fs_freq(Path) ->
+  AbsPath = abspath(Path),
+  try maps:get(AbsPath, get_mtab_data(5))
+  catch error:bad_key ->
+    case AbsPath of
+      <<"/">> ->
+        throw("no_fs_freq");
+      _ ->
+        get_options(filename:dirname(AbsPath))
+    end
+  end.
+
+get_fs_passno(Path) ->
+  AbsPath = abspath(Path),
+  try maps:get(AbsPath, get_mtab_data(6))
+  catch error:bad_key ->
+    case AbsPath of
+      <<"/">> ->
+        throw("no_fs_passno");
+      _ ->
+        get_options(filename:dirname(AbsPath))
     end
   end.
 
@@ -60,18 +95,12 @@ raw_read_loop(File, Acc) ->
       erlang:error(Reason)
     end.
 
-parse_mounts([<<>> | Rest], Map) ->
-  Map;
-parse_mounts([Blob | Rest], Map) ->
-  [Partition | [Mount | _]] = binary:split(Blob, [<<" ">>], [global]),
-  parse_mounts(Rest, maps:put(Mount, Partition, Map));
-parse_mounts([], Map) ->
-  Map.
-
-parse_types([<<>> | Rest], Map) ->
-  Map;
-parse_types([Blob | Rest], Map) ->
-  [Partition | [Mount | [Type | _]]] = binary:split(Blob, [<<" ">>], [global]),
-  parse_types(Rest, maps:put(Mount, Type, Map));
-parse_types([], Map) ->
+parse_field([<<>> | Rest], Index, Map) ->
+  parse_field(Rest, Index, Map);
+parse_field([Blob | Rest], Index, Map) ->
+  List = binary:split(Blob, [<<" ">>], [global]),
+  Mount = lists:nth(2, List),
+  Value = lists:nth(Index, List),
+  parse_field(Rest, Index, maps:put(Mount, Value, Map));
+parse_field([], _, Map) ->
   Map.
