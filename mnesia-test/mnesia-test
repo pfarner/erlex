@@ -1,0 +1,76 @@
+#!/usr/bin/env escript
+%% -*- erlang -*-
+%%! -smp enable -sname mnesia-test -mnesia debug verbose
+
+-include("simple.hrl").
+
+main(_) ->
+  io:format("create schema: ~p~n", [mnesia:create_schema([node()])]),
+  io:format("start ~p~n", [application:start(mnesia)]),
+  %io:format("start: ~p~n", [mnesia:start()]),
+  io:format("wait ~p~n", [mnesia:wait_for_tables([simple], 10000)]),
+  io:format("delete ~p~n", [mnesia:delete_table(simple)]),
+  Created = mnesia:create_table(simple, [{attributes, record_info(fields, simple)}, {disc_copies, [node()]}]),
+  io:format("create ~p~n", [Created]),
+  io:format("create ~p~n",
+    [case Created of
+      {atomic, ok} ->
+        ok;
+      {aborted, {already_exists, simple}} ->
+        disovered;
+      Other -> throw(io:format("Failure: ~p~n", [Other]))
+      end]),
+  io:format("record ~p~n", [record_info(fields, simple)]),
+  F = fun() ->
+    mnesia:write(#simple{key=100,alpha=200,beta="/mnt/plover"})
+    end,
+  io:format("tx: ~p~n", [mnesia:transaction(F)]),
+  Fs = #simple{key = 101, alpha = 300, beta = "/test"},
+  insert(Fs),
+  %mnesia:info(),
+  ListOfTables = mnesia:system_info(tables),
+  io:format("tables: ~p~n", [ListOfTables]),
+  io:format("key tx ~p~n", [mnesia:transaction(fun() ->
+    io:format("keys ~p~n", [mnesia:all_keys(simple)])
+    end)]),
+  list(simple),
+  %ListOfKeys = [{Table, mnesia:dirty_all_keys(Table)} ||
+  %  Table <- ListOfTables,
+  %  Table /= schema ],
+  %io:format("keys: ~p~n", [ListOfKeys]),
+  %io:format("time: ~p~n", [os:timestamp()]),
+  application:stop(mnesia),
+  ok.
+
+
+%-record(simple, { key, alpha, beta }).
+insert(Row) ->
+  Key = Row#simple.key,
+  io:format("key ~p~n", [Key]),
+  io:format("row ~p~n", [Row]),
+  Fun = fun() ->
+    io:format("insert/write ~p~n", [mnesia:write(Row)])
+    end,
+  io:format("insert/tx: ~p~n", [mnesia:transaction(Fun)]).
+
+list(Tab) ->
+  case mnesia:dirty_first(Tab) of
+    '$end_of_table' ->
+      ok;
+    First ->
+      [Row] = mnesia:dirty_read({Tab, First}),
+      io:format("~p~n", [Row]),
+      list(Tab, First),
+      ok
+  end.
+
+list(Tab, Prev) ->
+  case mnesia:dirty_next(Tab, Prev) of
+    '$end_of_table' ->
+      ok;
+    First ->
+      [Row] = mnesia:dirty_read({Tab, First}),
+      io:format("~p~n", [Row]),
+      list(Tab, First),
+      ok
+  end.

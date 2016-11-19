@@ -1,0 +1,1 @@
+-record(simple, { key, alpha, beta }).
