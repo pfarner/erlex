@@ -1,0 +1,35 @@
+#!/usr/bin/env escript
+%% -*- erlang -*-
+%%! -smp enable -sname crawl -mnesia debug verbose
+
+-include("filesystem.hrl").
+
+main([]) ->
+  db:start(),
+  db:create_table(filesystem, record_info(fields, filesystem)),
+  create_current_mounts(),
+  db:print(filesystem),
+  io:format("OK"),
+  db:stop().
+
+create_current_mounts() ->
+  KnownMounts = db:get_by(filesystem, record_info(fields, filesystem), mount),
+  Max = db:get_max(filesystem, record_info(fields, filesystem), fsid),
+  maps:fold(fun(K, _, LastMax) ->
+      try maps:get(K, KnownMounts) of
+        X -> io:format("Found ~p~n", [X])
+      catch
+        error:bad_key ->
+	  NewMax = LastMax+1,
+	  Record = #filesystem{fsid=NewMax, deviceid=unknown, mount=K, type=mounts:get_type(K)},
+	  db:insert(filesystem, Record),
+	  NewMax
+      end
+    end,
+    Max,
+    mounts:get_mounts()),
+  io:format("Result: ~p~n", [db:get_by(filesystem, record_info(fields, filesystem), mount)]),
+  io:format("==================~n", []),
+  db:print(filesystem).
+  %db:find(filesystem, mount, "/").
+  

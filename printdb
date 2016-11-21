@@ -1,0 +1,13 @@
+#!/usr/bin/env escript
+%% -*- erlang -*-
+%%! -smp enable -sname printdb -mnesia debug verbose
+
+-include("filesystem.hrl").
+
+main([]) ->
+  io:format("Please run \"printdb TableName\"");
+main([Table]) ->
+  db:start(),
+  io:format("Create: ~p~n", [db:create_table(filesystem, record_info(fields, filesystem))]),
+  io:format("type: ~p~n", [types:name(Table)]),
+  db:print(Table).

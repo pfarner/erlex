@@ -1,0 +1,1 @@
+-record(filesystem, { fsid, deviceid, mount, type }).

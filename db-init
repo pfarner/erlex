@@ -1,0 +1,9 @@
+#!/usr/bin/env escript
+%% -*- erlang -*-
+%%! -smp enable -sname db -mnesia debug verbose
+
+-include("filesystem.hrl").
+
+main([]) ->
+  db:start(),
+  db:create_table(filesystem, record_info(fields, filesystem)).
